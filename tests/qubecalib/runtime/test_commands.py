@@ -116,6 +116,48 @@ def test_port_config_acquirer_uses_loopback_output_sideband_for_input_port() -> 
     assert acquirer.sideband == "L"
 
 
+def test_port_config_acquirer_prefers_channel_cnco_when_cached() -> None:
+    """Given channel-level CNCO in cache, when acquiring config, then it overrides port CNCO."""
+    ports = {
+        0: {
+            "channels": {
+                0: {"fnco_freq": 0.0},
+                1: {"cnco_freq": 2.0e9, "fnco_freq": 0.0},
+            },
+            "sideband": "U",
+            "lo_freq": 8.0e9,
+            "cnco_freq": 1.0e9,
+        },
+        1: {
+            "runits": {
+                0: {"fnco_freq": 0.0},
+                4: {"cnco_freq": 2.5e9, "fnco_freq": 0.0},
+            },
+            "sideband": None,
+            "lo_freq": 8.0e9,
+            "cnco_freq": 1.0e9,
+        },
+    }
+
+    output_acquirer = PortConfigAcquirer(
+        boxpool=cast(Any, _FakeBoxPool(ports)),
+        box_name="B0",
+        box=cast(Any, _FakeBox()),
+        port=0,
+        channel=1,
+    )
+    input_acquirer = PortConfigAcquirer(
+        boxpool=cast(Any, _FakeBoxPool(ports)),
+        box_name="B0",
+        box=cast(Any, _FakeBox()),
+        port=1,
+        channel=4,
+    )
+
+    assert output_acquirer.cnco_freq == 2.0e9
+    assert input_acquirer.cnco_freq == 2.5e9
+
+
 def test_port_config_acquirer_raises_when_output_sideband_missing_with_lo() -> None:
     """Given missing output sideband with LO, when acquiring input config, then an error is raised."""
     ports = {

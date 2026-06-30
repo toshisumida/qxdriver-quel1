@@ -505,7 +505,7 @@ class QubeCalib:
                 # config_root=Path(setting.config_root)
                 # if setting.config_root is not None
                 # else None,
-                # config_options=setting.config_options,
+                config_options=setting.config_options,
             )
             box.reconnect()
         return boxpool

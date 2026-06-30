@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 from typing import Any, Final, cast
 
 from quel_ic_config import Quel1Box, Quel1BoxType
@@ -15,6 +16,24 @@ from qxdriver_quel1.clockmaster.compat import (
 from qxdriver_quel1.sysconf import Quel1PortType
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_dual_readout_groups(
+    config_options: Collection[object] | None,
+) -> set[int]:
+    """Extract quelware dual-readout group indices from config options."""
+    if not config_options:
+        return set()
+
+    groups: set[int] = set()
+    for option in config_options:
+        value = getattr(option, "value", str(option))
+        prefix = "dual_readout_output_mxfe"
+        if isinstance(value, str) and value.startswith(prefix):
+            suffix = value.removeprefix(prefix)
+            if suffix.isdecimal():
+                groups.add(int(suffix))
+    return groups
 
 
 class BoxPool:
@@ -132,15 +151,20 @@ class BoxPool:
         ipaddr_sss: str,
         ipaddr_css: str,
         boxtype: Quel1BoxType,
+        config_options: Collection[object] | None = None,
     ) -> Quel1Box:
         """Create and register a new box and its sequencer client."""
-        box = Quel1Box.create(
-            ipaddr_wss=ipaddr_wss,
-            ipaddr_sss=ipaddr_sss,
-            ipaddr_css=ipaddr_css,
-            boxtype=boxtype,
-            skip_init=False,
-        )
+        create_kwargs: dict[str, Any] = {
+            "ipaddr_wss": ipaddr_wss,
+            "ipaddr_sss": ipaddr_sss,
+            "ipaddr_css": ipaddr_css,
+            "boxtype": boxtype,
+            "skip_init": False,
+        }
+        dual_readout_groups = _resolve_dual_readout_groups(config_options)
+        if dual_readout_groups:
+            create_kwargs["dual_readout_groups"] = dual_readout_groups
+        box = Quel1Box.create(**create_kwargs)
         register_box(box)
         sqc = SequencerClient(ipaddr_sss, box=box)
         self._boxes[box_name] = (box, sqc)

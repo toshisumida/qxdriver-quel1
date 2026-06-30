@@ -61,7 +61,7 @@ class BoxSetting:
         elif not isinstance(self.ipaddr_css, (IPv4Address, IPv6Address)):
             raise ValueError("ipaddr_css should be instance of IPvxAddress")
 
-        self.config_options = []
+        self.config_options = list(self.config_options)
 
     def asdict(self) -> dict[str, Any]:
         """Return a JSON-friendly dictionary representation."""

@@ -97,13 +97,26 @@ class PortConfigAcquirer:
                 allow_missing_mixer_sideband=is_capture_input
                 and not has_loopback_source,
             )
+            cnco_freq = dp["cnco_freq"]
             fnco_freq = 0
             if port in box.get_output_ports():
-                fnco_freq = dp["channels"][channel]["fnco_freq"]
+                channel_dump = dp["channels"][channel]
+                channel_cnco_freq = channel_dump.get("cnco_freq")
+                cnco_freq = (
+                    channel_cnco_freq
+                    if channel_cnco_freq is not None
+                    else cnco_freq
+                )
+                fnco_freq = channel_dump["fnco_freq"]
             if port in box.get_input_ports():
-                fnco_freq = dp["runits"][channel]["fnco_freq"]
+                runit_dump = dp["runits"][channel]
+                runit_cnco_freq = runit_dump.get("cnco_freq")
+                cnco_freq = (
+                    runit_cnco_freq if runit_cnco_freq is not None else cnco_freq
+                )
+                fnco_freq = runit_dump["fnco_freq"]
             self.lo_freq: float | None = dp.get("lo_freq", None)
-            self.cnco_freq: float = dp["cnco_freq"]
+            self.cnco_freq: float = cnco_freq
             self.fnco_freq: float = fnco_freq
             self.sideband: str | None = sideband
         else:

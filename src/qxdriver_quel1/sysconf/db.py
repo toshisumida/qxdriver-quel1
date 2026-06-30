@@ -33,6 +33,24 @@ from qxdriver_quel1.sysconf.models import (
 logger = logging.getLogger(__name__)
 
 
+def _resolve_dual_readout_groups(
+    config_options: MutableSequence[object] | None,
+) -> set[int]:
+    """Extract quelware dual-readout group indices from config options."""
+    if not config_options:
+        return set()
+
+    groups: set[int] = set()
+    for option in config_options:
+        value = getattr(option, "value", str(option))
+        prefix = "dual_readout_output_mxfe"
+        if isinstance(value, str) and value.startswith(prefix):
+            suffix = value.removeprefix(prefix)
+            if suffix.isdecimal():
+                groups.add(int(suffix))
+    return groups
+
+
 class SystemConfigDatabase:
     """Store and resolve box/port/target relationships for calibration flows."""
 
@@ -468,13 +486,17 @@ class SystemConfigDatabase:
     ) -> Quel1Box:
         """Create and optionally reconnect a `Quel1Box` instance."""
         s = self._box_settings[box_name]
-        box = Quel1Box.create(
-            ipaddr_wss=str(s.ipaddr_wss),
-            ipaddr_sss=str(s.ipaddr_sss),
-            ipaddr_css=str(s.ipaddr_css),
-            boxtype=s.boxtype,
-            skip_init=False,
-        )
+        create_kwargs: dict[str, Any] = {
+            "ipaddr_wss": str(s.ipaddr_wss),
+            "ipaddr_sss": str(s.ipaddr_sss),
+            "ipaddr_css": str(s.ipaddr_css),
+            "boxtype": s.boxtype,
+            "skip_init": False,
+        }
+        dual_readout_groups = _resolve_dual_readout_groups(s.config_options)
+        if dual_readout_groups:
+            create_kwargs["dual_readout_groups"] = dual_readout_groups
+        box = Quel1Box.create(**create_kwargs)
         register_box(box)
         if reconnect:
             if not all(box.link_status().values()):
