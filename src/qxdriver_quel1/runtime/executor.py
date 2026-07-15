@@ -201,6 +201,7 @@ class Executor:
                     ipaddr_css=str(setting.ipaddr_css),
                     boxtype=setting.boxtype,
                     config_options=setting.config_options,
+                    dual_readout_routes=setting.dual_readout_routes,
                 )
                 status = box.reconnect()
                 for mxfe_idx, linked in status.items():

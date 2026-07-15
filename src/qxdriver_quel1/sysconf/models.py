@@ -3,16 +3,46 @@
 from __future__ import annotations
 
 import os
-from collections.abc import MutableSequence
+from collections.abc import Mapping, MutableSequence
 from dataclasses import asdict, dataclass, field
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import Any
 
-from quel_ic_config import QUEL1_BOXTYPE_ALIAS, Quel1BoxType, Quel1ConfigOption
+from quel_ic_config import (
+    QUEL1_BOXTYPE_ALIAS,
+    DualReadoutRoute,
+    Quel1BoxType,
+    Quel1ConfigOption,
+)
 
 from qxdriver_quel1.driver import Quel1PortType
 
 DEFAULT_SIDEBAND = "U"
+
+
+def _normalize_dual_readout_routes(
+    routes: MutableSequence[DualReadoutRoute] | MutableSequence[Mapping[str, object]],
+) -> list[DualReadoutRoute]:
+    """Normalize routes restored from JSON into quelware route objects."""
+    normalized = []
+    for route in routes:
+        if isinstance(route, DualReadoutRoute):
+            normalized.append(route)
+            continue
+        if not isinstance(route, Mapping):
+            raise TypeError(
+                "dual_readout_routes must contain route objects or mappings"
+            )
+        donor_port = route["donor_port"]
+        if isinstance(donor_port, list):
+            donor_port = tuple(donor_port)
+        normalized.append(
+            DualReadoutRoute(
+                group=int(route["group"]),
+                donor_port=donor_port,
+            )
+        )
+    return normalized
 
 
 @dataclass
@@ -38,6 +68,7 @@ class BoxSetting:
     ipaddr_css: str | IPv4Address | IPv6Address | None = None
     config_root: str | os.PathLike | None = None
     config_options: MutableSequence[Quel1ConfigOption] = field(default_factory=list)
+    dual_readout_routes: MutableSequence[DualReadoutRoute] = field(default_factory=list)
     adapter: str | None = None
 
     def __post_init__(self) -> None:
@@ -62,6 +93,9 @@ class BoxSetting:
             raise ValueError("ipaddr_css should be instance of IPvxAddress")
 
         self.config_options = list(self.config_options)
+        self.dual_readout_routes = _normalize_dual_readout_routes(
+            self.dual_readout_routes
+        )
 
     def asdict(self) -> dict[str, Any]:
         """Return a JSON-friendly dictionary representation."""
@@ -74,6 +108,10 @@ class BoxSetting:
             if self.config_root is not None
             else None,
             "config_options": self.config_options,
+            "dual_readout_routes": [
+                {"group": route.group, "donor_port": route.donor_port}
+                for route in self.dual_readout_routes
+            ],
             "adapter": self.adapter,
         }
 
