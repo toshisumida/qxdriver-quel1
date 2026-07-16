@@ -13,6 +13,7 @@ from typing import Any, Final
 
 from quel_ic_config import (
     QUEL1_BOXTYPE_ALIAS,
+    DualReadoutRoute,
     Quel1Box,
     Quel1BoxType,
     Quel1ConfigOption,
@@ -265,6 +266,7 @@ class QubeCalib:
         ipaddr_css: str | None = None,
         config_root: str | None = None,
         config_options: MutableSequence[Quel1ConfigOption] | None = None,
+        dual_readout_routes: MutableSequence[DualReadoutRoute] | None = None,
     ) -> dict[str, Any]:
         """Register one box definition in the system database."""
         if config_options is None:
@@ -274,6 +276,7 @@ class QubeCalib:
             ipaddr_wss=ipaddr_wss,
             boxtype=boxtype,
             config_options=config_options,
+            dual_readout_routes=dual_readout_routes,
             ipaddr_sss=ipaddr_sss,
             ipaddr_css=ipaddr_css,
             # config_root=config_root,
@@ -506,6 +509,7 @@ class QubeCalib:
                 # if setting.config_root is not None
                 # else None,
                 config_options=setting.config_options,
+                dual_readout_routes=setting.dual_readout_routes,
             )
             box.reconnect()
         return boxpool

@@ -6,7 +6,7 @@ import logging
 from collections.abc import Collection
 from typing import Any, Final, cast
 
-from quel_ic_config import Quel1Box, Quel1BoxType
+from quel_ic_config import DualReadoutRoute, Quel1Box, Quel1BoxType
 
 from qxdriver_quel1.clockmaster.compat import (
     QuBEMasterClient,
@@ -152,6 +152,7 @@ class BoxPool:
         ipaddr_css: str,
         boxtype: Quel1BoxType,
         config_options: Collection[object] | None = None,
+        dual_readout_routes: Collection[DualReadoutRoute] | None = None,
     ) -> Quel1Box:
         """Create and register a new box and its sequencer client."""
         create_kwargs: dict[str, Any] = {
@@ -164,6 +165,8 @@ class BoxPool:
         dual_readout_groups = _resolve_dual_readout_groups(config_options)
         if dual_readout_groups:
             create_kwargs["dual_readout_groups"] = dual_readout_groups
+        if dual_readout_routes:
+            create_kwargs["dual_readout_routes"] = dual_readout_routes
         box = Quel1Box.create(**create_kwargs)
         register_box(box)
         sqc = SequencerClient(ipaddr_sss, box=box)

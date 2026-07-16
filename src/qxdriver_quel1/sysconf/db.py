@@ -15,6 +15,7 @@ from typing import Any, Final
 import yaml
 from quel_ic_config import (
     QUEL1_BOXTYPE_ALIAS,
+    DualReadoutRoute,
     Quel1Box,
     Quel1BoxType,
     Quel1ConfigOption,
@@ -238,6 +239,7 @@ class SystemConfigDatabase:
         ipaddr_css: str | IPv4Address | IPv6Address | None = None,
         config_root: str | os.PathLike | None = None,
         config_options: MutableSequence[Quel1ConfigOption] | None = None,
+        dual_readout_routes: MutableSequence[DualReadoutRoute] | None = None,
         adapter: str | None = None,
     ) -> None:
         """Add or replace a box setting entry."""
@@ -245,6 +247,8 @@ class SystemConfigDatabase:
             boxtype = QUEL1_BOXTYPE_ALIAS[boxtype]
         if config_options is None:
             config_options = []
+        if dual_readout_routes is None:
+            dual_readout_routes = []
         self._box_settings[box_name] = BoxSetting(
             box_name=box_name,
             ipaddr_wss=ipaddr_wss,
@@ -253,6 +257,7 @@ class SystemConfigDatabase:
             ipaddr_css=ipaddr_css,
             config_root=config_root,
             config_options=config_options,
+            dual_readout_routes=dual_readout_routes,
             adapter=adapter,
         )
 
@@ -401,16 +406,20 @@ class SystemConfigDatabase:
         ipaddr_css: str | None = None,
         config_root: str | None = None,
         config_options: MutableSequence[Quel1ConfigOption] | None = None,
+        dual_readout_routes: MutableSequence[DualReadoutRoute] | None = None,
         adapter: str | None = None,
     ) -> dict[str, object]:
         """Define and store a box setting, then return it as a dictionary."""
         if config_options is None:
             config_options = []
+        if dual_readout_routes is None:
+            dual_readout_routes = []
         box_setting = BoxSetting(
             box_name=box_name,
             ipaddr_wss=ipaddr_wss,
             boxtype=QUEL1_BOXTYPE_ALIAS[boxtype],
             config_options=config_options,
+            dual_readout_routes=dual_readout_routes,
             ipaddr_sss=ipaddr_sss,
             ipaddr_css=ipaddr_css,
             config_root=config_root,
@@ -496,6 +505,8 @@ class SystemConfigDatabase:
         dual_readout_groups = _resolve_dual_readout_groups(s.config_options)
         if dual_readout_groups:
             create_kwargs["dual_readout_groups"] = dual_readout_groups
+        if s.dual_readout_routes:
+            create_kwargs["dual_readout_routes"] = s.dual_readout_routes
         box = Quel1Box.create(**create_kwargs)
         register_box(box)
         if reconnect:
